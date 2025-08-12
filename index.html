@@ -54,6 +54,15 @@
     .sr{position:absolute; width:1px; height:1px; padding:0; margin:-1px; overflow:hidden; clip:rect(0,0,0,0); border:0}
     @media (max-width:720px){ select{flex:1} th:nth-child(4), td:nth-child(4){display:none} }
   </style>
+  <script>
+  const PASS = "team-only"; // 共有する合言葉
+  if (!sessionStorage.getItem("ok")) {
+    const input = prompt("社内用パスワードを入力してください");
+    if (input !== PASS) location.href = "about:blank";
+    sessionStorage.setItem("ok", "1");
+  }
+</script>
+
 </head>
 <body>
   <header>
