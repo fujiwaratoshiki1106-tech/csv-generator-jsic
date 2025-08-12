@@ -1,0 +1,357 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <title>業種別CSVジェネレーター（A〜T / JSIC準拠）</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <style>
+    :root{
+      --bg:#0f172a; --card:#111827; --muted:#9ca3af; --text:#e5e7eb;
+      --accent:#22d3ee; --accent2:#60a5fa; --ok:#34d399;
+      --border:rgba(255,255,255,.08);
+    }
+    *{box-sizing:border-box}
+    body{
+      margin:0; font-family: ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial;
+      background: radial-gradient(1200px 600px at 10% -10%, rgba(34,211,238,.25), transparent 40%),
+                  radial-gradient(1000px 500px at 110% 0%, rgba(96,165,250,.18), transparent 40%),
+                  var(--bg); color:var(--text);
+    }
+    header{padding:28px 20px 10px; text-align:center}
+    h1{margin:0; font-size:clamp(20px,4vw,28px); letter-spacing:.02em}
+    .sub{color:var(--muted); font-size:12px; margin-top:6px}
+    .wrap{max-width:1080px; margin:18px auto 48px; padding:0 16px}
+    .panel{
+      background:linear-gradient(180deg, rgba(255,255,255,.02), transparent),
+                 var(--card);
+      border:1px solid var(--border); border-radius:14px; padding:18px;
+      box-shadow:0 20px 60px rgba(0,0,0,.25), inset 0 1px 0 rgba(255,255,255,.03);
+    }
+    .row{display:flex; gap:12px; flex-wrap:wrap; align-items:end}
+    label{font-size:12px; color:var(--muted); display:block; margin-bottom:6px}
+    select, button{
+      border-radius:10px; border:1px solid var(--border); background:#0b1220; color:var(--text);
+      padding:12px 14px; font-size:14px;
+    }
+    select{min-width:280px}
+    button.primary{
+      background: linear-gradient(90deg, var(--accent), var(--accent2));
+      color:#06232a; border:none; font-weight:700; letter-spacing:.02em;
+      box-shadow:0 8px 30px rgba(34,211,238,.25), inset 0 1px 0 rgba(255,255,255,.2);
+      cursor:pointer;
+    }
+    button.ghost{background:transparent; border:1px solid var(--border); cursor:pointer}
+    .hint{font-size:12px; color:var(--muted); margin-top:8px}
+    .actions{display:flex; gap:8px; flex-wrap:wrap}
+    table{width:100%; border-collapse:separate; border-spacing:0; margin-top:14px}
+    th,td{padding:10px 12px; border-bottom:1px solid var(--border); font-size:13px; vertical-align:top}
+    th{position:sticky; top:0; background:#0b1220; text-align:left}
+    .num{color:#a5b4fc; font-variant-numeric:tabular-nums}
+    .footer{display:flex; justify-content:space-between; align-items:center; gap:12px; margin-top:12px; flex-wrap:wrap}
+    .pill{font-size:12px; color:#0b1220; background:linear-gradient(90deg,#a7f3d0,#93c5fd); padding:6px 10px; border-radius:999px; font-weight:700}
+    .empty{color:var(--muted); text-align:center; padding:36px}
+    .tag{display:inline-block; padding:2px 8px; border-radius:999px; border:1px solid var(--border); font-size:11px; color:var(--muted)}
+    .sr{position:absolute; width:1px; height:1px; padding:0; margin:-1px; overflow:hidden; clip:rect(0,0,0,0); border:0}
+    @media (max-width:720px){ select{flex:1} th:nth-child(4), td:nth-child(4){display:none} }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>業種別CSVジェネレーター</h1>
+    <div class="sub">日本標準産業分類（令和5年改定）A〜Tに対応。Excelで文字化けしないBOM付きCSVを出力。</div>
+  </header>
+
+  <div class="wrap">
+    <section class="panel" aria-labelledby="formTitle">
+      <h2 id="formTitle" class="sr">入力フォーム</h2>
+      <div class="row">
+        <div>
+          <label for="division">① 業種（大分類 A〜T）</label>
+          <select id="division">
+            <!-- JSIC A〜T -->
+            <option value="A">A 農業，林業</option>
+            <option value="B">B 漁業</option>
+            <option value="C">C 鉱業，採石業，砂利採取業</option>
+            <option value="D">D 建設業</option>
+            <option value="E">E 製造業</option>
+            <option value="F">F 電気・ガス・熱供給・水道業</option>
+            <option value="G">G 情報通信業</option>
+            <option value="H">H 運輸業，郵便業</option>
+            <option value="I">I 卸売業，小売業</option>
+            <option value="J">J 金融業，保険業</option>
+            <option value="K">K 不動産業，物品賃貸業</option>
+            <option value="L">L 学術研究，専門・技術サービス業</option>
+            <option value="M">M 宿泊業，飲食サービス業</option>
+            <option value="N">N 生活関連サービス業，娯楽業</option>
+            <option value="O">O 教育，学習支援業</option>
+            <option value="P">P 医療，福祉</option>
+            <option value="Q">Q 複合サービス事業</option>
+            <option value="R">R サービス業（他に分類されないもの）</option>
+            <option value="S">S 公務（他に分類されるものを除く）</option>
+            <option value="T">T 分類不能の産業</option>
+          </select>
+          <div class="hint">※ 区分名称は e‑Stat の公開内容に準拠</div>
+        </div>
+        <div>
+          <label>&nbsp;</label>
+          <button class="primary" id="generateBtn">② 生成する（30件）</button>
+        </div>
+        <div class="actions">
+          <button class="ghost" id="downloadBtn" disabled>CSVをダウンロード</button>
+          <button class="ghost" id="copyBtn" disabled>CSVをコピー</button>
+        </div>
+      </div>
+    </section>
+
+    <section class="panel" aria-labelledby="outTitle" style="margin-top:14px">
+      <div class="footer">
+        <div class="pill" id="status">未生成</div>
+        <div class="tag" id="seedTag" title="再現用シード値">seed: -</div>
+      </div>
+      <h2 id="outTitle" class="sr">出力（テーブル & CSV）</h2>
+      <div id="tableWrap" class="empty">ここに30件のデータが表示されます。</div>
+    </section>
+  </div>
+
+  <script>
+    // ======= 業種ごとの語彙・設定 =======
+    const vocab = {
+      A:{ names:["アグリ","里山","緑苑","ファーム","オーチャード","林産","きのこ","果樹","稲作","畜産"],
+          biz:["有機栽培による青果出荷体制の構築","6次産業化による加工・直販モデルの展開","スマート農機の導入支援と営農DX","森林資源の間伐・チップ供給","地域JAとの共同出荷・トレーサビリティ強化","圃場センシングによる収量最適化"],
+          scale:[5,20,50,100] },
+      B:{ names:["マリン","外洋","ブルーウェーブ","漁協連携","アクア","シーサイド","沖漁","湾岸"],
+          biz:["定置網・延縄の複合操業と鮮度保持","HACCP準拠の加工ライン運用","養殖飼料の最適化とIoT給餌","未利用魚の加工品開発","冷凍物流の共同化によるコスト削減"],
+          scale:[10,30,80,150] },
+      C:{ names:["ミネラル","鉱研","ストーンワークス","クォーリー","岩砕","サンドリバー","鉱材"],
+          biz:["砕石・骨材の採取と建材供給","坑内安全管理と保安教育の徹底","資源採掘後の緑化・原状回復","鉱滓の再資源化と出荷"],
+          scale:[30,80,200,500] },
+      D:{ names:["ビルド","総合建設","土木機構","基礎工","アーキテクツ","設備工業","耐震設計"],
+          biz:["公共土木の施工管理と品質保証","RC造・S造の躯体工事一式","ZEB相当の省エネ改修","BIM/CIMによる工程最適化","災害復旧工事の即応体制"],
+          scale:[20,80,200,800] },
+      E:{ names:["マニュファクチャリング","精機","電機","化工","食品","樹脂成形","金属加工","ファブ"],
+          biz:["多品種少量の受託製造と短納期対応","自動化ラインのOEE向上","ISO9001/14001に基づく品質管理","海外OEM向けロット生産","原価低減のためのVA/VE提案"],
+          scale:[30,100,300,1000] },
+      F:{ names:["エナジー","ガスサプライ","ユーティリティ","ウォーター","熱供給","配電サービス"],
+          biz:["地域向け小売電気・託送手続き","配水設備の維持管理と漏水対策","需要家の省エネコンサル","再エネ由来の非化石証書取扱い"],
+          scale:[50,150,400,1200] },
+      G:{ names:["デジタル","クラウド","メディアリンク","ネットワーク","データ","AIソリューション"],
+          biz:["SaaS導入と業務DX支援","受託開発と保守運用","広告配信・アドテク運用","CDN/配信基盤の構築","生成AI活用のPoC支援"],
+          scale:[10,40,120,400] },
+      H:{ names:["ロジスティクス","カーゴ","ライン便","エクスプレス","倉庫","ラストマイル"],
+          biz:["共同配送とリードタイム短縮","定温・定湿の倉庫運営","EC向け当日配送網の構築","配車最適化と積載率向上"],
+          scale:[20,60,180,600] },
+      I:{ names:["ホールセール","リテール","マーケット","ストアーズ","トレーディング","小売企画"],
+          biz:["PB商品の企画と卸売","在庫最適化とEDI連携","実店舗×ECのオムニ運営","カテゴリ強化による粗利改善"],
+          scale:[10,40,120,400] },
+      J:{ names:["フィナンシャル","キャピタル","クレジット","アシュアランス","インベストメント","リース"],
+          biz:["中小向け融資と伴走支援","キャッシュレス決済の加盟店開拓","少額短期保険の企画販売","投信・NISAの提案","与信管理とリスク評価"],
+          scale:[30,120,400,1200] },
+      K:{ names:["リアルティ","プロパティ","リース","レンタル","アセットマネジメント","不動産企画"],
+          biz:["賃貸管理と空室改善","サブスク型什器レンタル","CRE戦略のPM/AM","仲介＋リフォーム一体提案"],
+          scale:[10,30,100,300] },
+      L:{ names:["リサーチ","アナリティクス","コンサルティング","デザインラボ","測量設計","特許技術"],
+          biz:["受託調査と統計解析","業務BPRコンサルティング","測量・土木設計","UI/UXデザイン制作","知財出願支援"],
+          scale:[5,20,80,200] },
+      M:{ names:["ホテルズ","リゾート","イン","レストラン","フードサービス","ケータリング"],
+          biz:["宿泊運営と客室清掃の内製化","インバウンド向け施策","多店舗の原価・衛生管理","宴会・ケータリング運営"],
+          scale:[10,40,120,400] },
+      N:{ names:["ライフサポート","パーソナル","レジャー","イベント","クリーニング","美容"],
+          biz:["家事代行の定期サービス","ホール運営と催事企画","リネンサプライのBtoB","美容サロン多店舗運営"],
+          scale:[5,20,60,200] },
+      O:{ names:["エデュケーション","アカデミー","ラーニング","塾","研修","カルチャー"],
+          biz:["学校外教育の企画運営","法人向け研修の設計","オンライン講座の提供","教材開発と著作管理"],
+          scale:[5,20,80,200] },
+      P:{ names:["メディカル","ヘルスケア","クリニック","ケアサービス","訪問看護","保育"],
+          biz:["外来・在宅の地域医療","介護保険サービスの提供","保育施設の運営","多職種連携と地域包括ケア"],
+          scale:[10,40,200,600] },
+      Q:{ names:["郵便","JA/生協","共済/互助","自治体複合","第三セクター","団体複合"],
+          biz:["郵便・貯金・保険の一体運営","組合事業の総合サービス","公共＋民間の複合事業運営"],
+          scale:[50,150,500,1500] },
+      R:{ names:["ソリューション","アウトソース","イベント制作","清掃警備","レンタル","翻訳通訳"],
+          biz:["受託・請負の運営改善","BPOセンター運営","施設管理（FM）","イベント設営と運営"],
+          scale:[10,40,120,400] },
+      S:{ names:["市役所","県庁","公共機関","消防局","警察関連","公共サービス"],
+          biz:["行政事務・住民サービス","危機管理と防災業務","施設維持管理","窓口のDX推進"],
+          scale:[100,300,1000,3000] },
+      T:{ names:["クロスオーバー","ハイブリッド","新産業","R&Dスピンアウト","統合サービス","ベンチャー"],
+          biz:["複数分野に跨る新規事業","実証実験の事業化支援","業際領域のサービス開発"],
+          scale:[5,30,120,400] },
+    };
+
+    const prefectures = ["北海道","青森県","岩手県","宮城県","秋田県","山形県","福島県","茨城県","栃木県","群馬県","埼玉県","千葉県","東京都","神奈川県","新潟県","富山県","石川県","福井県","山梨県","長野県","岐阜県","静岡県","愛知県","三重県","滋賀県","京都府","大阪府","兵庫県","奈良県","和歌山県","鳥取県","島根県","岡山県","広島県","山口県","徳島県","香川県","愛媛県","高知県","福岡県","佐賀県","長崎県","熊本県","大分県","宮崎県","鹿児島県","沖縄県"];
+
+    // 乱数ユーティリティ（シード固定も可能）
+    let seed = Date.now() % 1000000000;
+    function srand(){ // xorshift
+      seed ^= seed << 13; seed ^= seed >>> 17; seed ^= seed << 5;
+      return Math.abs(seed) / 0x7fffffff;
+    }
+    function pick(arr){ return arr[Math.floor(srand()*arr.length)] }
+    function int(min,max){ return Math.floor(srand()*(max-min+1))+min }
+
+    // 会社名の生成
+    function companyName(div){
+      const v = vocab[div];
+      const city = ["東京","大阪","名古屋","福岡","札幌","仙台","広島","横浜","神戸","京都"];
+      const suffix = ["株式会社","合同会社","株式会社","株式会社"]; // 株式比率多め
+      return `${pick(city)}${pick(v.names)}${pick(["","・",""])}`.replace(/・$/,"") + pick(suffix);
+    }
+
+    // 住所の生成（都道府県＋市区＋番地）
+    function address(){
+      const p = pick(prefectures);
+      const wardParts = ["市","区","郡","町","村"];
+      const wards = ["中央","北","東","西","南","緑","港","新"];
+      const ward = `${pick(wards)}${pick(wardParts)}`;
+      const chome = int(1,5), ban = int(1,30), go = int(1,20);
+      return `${p}${ward}${int(1,200)}-${chome}-${ban}-${go}`;
+    }
+
+    // 従業員規模の生成（業種ごとの典型レンジから分布）
+    function headcount(div){
+      const [s1,s2,s3,s4] = vocab[div].scale;
+      const buckets = [
+        [s1, s2], [s1, s3], [s2, s3], [s3, s4]
+      ];
+      const b = pick(buckets);
+      return int(b[0], b[1]);
+    }
+
+    // 事業概要の生成（可変フレーズ合成で毎回違う）
+    function bizSummary(div){
+      const core = pick(vocab[div].biz);
+      const add = [
+        "地域連携を強化し収益性を改善",
+        "データ基盤を整備しKPIを可視化",
+        "サプライチェーンのCO2削減に取組",
+        "多拠点化により需要変動へ柔軟対応",
+        "人材育成と安全衛生の徹底",
+        "外部パートナーと共同で新規顧客を開拓"
+      ];
+      const how = [
+        "クラウドとモバイルの標準化",
+        "需要予測に基づく在庫最適化",
+        "現場カイゼンと自動化の併用",
+        "ルート見直しとリードタイム短縮",
+        "品質保証体制の高度化",
+        "法令・認証に準拠した運用"
+      ];
+      return `${core}。${pick(add)}し、${pick(how)}を推進。`;
+    }
+
+    // CSVエスケープ
+    function csvEscape(v){
+      if(v==null) return "";
+      const s = String(v).replace(/\r?\n/g, " ");
+      return /[",\n]/.test(s) ? `"${s.replace(/"/g,'""')}"` : s;
+    }
+
+    function generateRows(div){
+      const rows = [];
+      for(let i=1;i<=30;i++){
+        rows.push({
+          企业番号: i, // Excel対策で先頭列は数値
+          会社名: companyName(div),
+          事業概要: bizSummary(div),
+          住所: address(),
+          従業員規模: headcount(div)
+        });
+      }
+      return rows;
+    }
+
+    function toCSV(rows){
+      const headers = ["企業番号","会社名","事業概要","住所","従業員規模"];
+      const lines = [];
+      lines.push(headers.map(csvEscape).join(","));
+      for(const r of rows){
+        lines.push([
+          r.企业番号, r.会社名, r.事業概要, r.住所, r.従業員規模
+        ].map(csvEscape).join(","));
+      }
+      return lines.join("\r\n");
+    }
+
+    function renderTable(rows){
+      if(!rows || !rows.length){
+        tableWrap.innerHTML = '<div class="empty">ここに30件のデータが表示されます。</div>';
+        return;
+      }
+      const thead = `
+        <thead><tr>
+          <th style="width:80px">企業番号</th>
+          <th style="width:260px">会社名</th>
+          <th>事業概要</th>
+          <th style="width:260px">住所</th>
+          <th style="width:120px">従業員規模</th>
+        </tr></thead>`;
+      const tbody = rows.map(r=>`
+        <tr>
+          <td class="num">${r.企业番号}</td>
+          <td>${r.会社名}</td>
+          <td>${r.事業概要}</td>
+          <td>${r.住所}</td>
+          <td class="num">${r.従業員規模}</td>
+        </tr>
+      `).join("");
+      tableWrap.innerHTML = `<table>${thead}<tbody>${tbody}</tbody></table>`;
+    }
+
+    function download(filename, csv){
+      const BOM = new Uint8Array([0xEF,0xBB,0xBF]);
+      const blob = new Blob([BOM, csv], {type:"text/csv"});
+      const a = document.createElement("a");
+      a.href = URL.createObjectURL(blob);
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(a.href);
+    }
+
+    // ======= イベント =======
+    const divisionSel = document.getElementById("division");
+    const generateBtn = document.getElementById("generateBtn");
+    const downloadBtn = document.getElementById("downloadBtn");
+    const copyBtn = document.getElementById("copyBtn");
+    const tableWrap = document.getElementById("tableWrap");
+    const statusEl = document.getElementById("status");
+    const seedTag = document.getElementById("seedTag");
+
+    let currentRows = [];
+    let currentCSV = "";
+
+    function regenerate(){
+      const div = divisionSel.value;
+      // 種の固定（UI上は表示のみ。必要なら固定値に書き換え）
+      seed = Date.now() % 1000000000;
+      seedTag.textContent = `seed: ${seed}`;
+      currentRows = generateRows(div);
+      currentCSV = toCSV(currentRows);
+      renderTable(currentRows);
+      statusEl.textContent = `${div} / ${currentRows.length}件 生成済み`;
+      statusEl.style.background = "linear-gradient(90deg,#6ee7b7,#93c5fd)";
+      downloadBtn.disabled = false;
+      copyBtn.disabled = false;
+    }
+
+    generateBtn.addEventListener("click", regenerate);
+    downloadBtn.addEventListener("click", ()=>{
+      const label = divisionSel.options[divisionSel.selectedIndex].text.split(" ")[0];
+      download(`JSIC_${label}_companies_30.csv`, currentCSV);
+    });
+    copyBtn.addEventListener("click", async ()=>{
+      try{
+        await navigator.clipboard.writeText(currentCSV);
+        copyBtn.textContent = "コピーしました！";
+        setTimeout(()=> copyBtn.textContent = "CSVをコピー", 1200);
+      }catch(e){
+        alert("コピーに失敗しました");
+      }
+    });
+
+    // 初期表示（Aでサンプル）
+    regenerate();
+  </script>
+</body>
+</html>
